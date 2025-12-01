@@ -2,6 +2,8 @@
 
 A modern, responsive course management and learning platform built with React, Vite, and Tailwind CSS.
 
+### Hosted Link : https://course-explorer-khaki.vercel.app/
+
 ## 🚀 Features
 
 ### Core Features

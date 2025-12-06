@@ -1,23 +1,24 @@
 
-
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import MainContent from './components/MainContent';
-import AdminPanel from './components/AdminPanel';
-import Header from './components/Header';
-import usersJson from './data/users.json';
-import CoursesJson from './data/courses.json';
-import { normalizeCourses } from "./components/normalizeCourses"
+import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import MainContent from "./components/MainContent";
+import AdminPanel from "./components/AdminPanel";
+import Header from "./components/Header";
+import usersJson from "./data/users.json";
+import CoursesJson from "./data/courses.json";
+import { normalizeCourses } from "./components/normalizeCourses";
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-const normalizedDefaultCourses = normalizeCourses(
-  CoursesJson.courses || CoursesJson || []
-);
-  // Initialize courses from localStorage OR CoursesJson
-   const [courses, setCourses] = useState(() => {
+  const normalizedDefaultCourses = normalizeCourses(
+    CoursesJson.courses || CoursesJson || []
+  );
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const [courses, setCourses] = useState(() => {
     try {
       const saved = localStorage.getItem("courses");
       if (saved) {
@@ -36,21 +37,20 @@ const normalizedDefaultCourses = normalizeCourses(
 
   const [users, setUsers] = useState(usersJson.users || []);
 
-
   const [completedSubtopics, setCompletedSubtopics] = useState(() => {
     try {
-      const saved = localStorage.getItem('completedSubtopics');
+      const saved = localStorage.getItem("completedSubtopics");
       if (saved) {
         const parsed = JSON.parse(saved);
-        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+        return typeof parsed === "object" && parsed !== null ? parsed : {};
       }
     } catch (error) {
-      console.error('Error loading completion state from localStorage:', error);
+      console.error("Error loading completion state from localStorage:", error);
     }
     return {};
   });
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [selectedSubtopic, setSelectedSubtopic] = useState(null);
@@ -58,39 +58,42 @@ const normalizedDefaultCourses = normalizeCourses(
   useEffect(() => {
     try {
       if (Array.isArray(courses) && courses.length > 0) {
-        localStorage.setItem('courses', JSON.stringify(courses));
+        localStorage.setItem("courses", JSON.stringify(courses));
       }
     } catch (error) {
-      console.error('Error saving courses to localStorage:', error);
+      console.error("Error saving courses to localStorage:", error);
     }
   }, [courses]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('completedSubtopics', JSON.stringify(completedSubtopics));
+      localStorage.setItem(
+        "completedSubtopics",
+        JSON.stringify(completedSubtopics)
+      );
     } catch (error) {
-      console.error('Error saving completion state to localStorage:', error);
+      console.error("Error saving completion state to localStorage:", error);
     }
   }, [completedSubtopics]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const courseId = params.get('course');
-    const topicId = params.get('topic');
-    const subtopicId = params.get('subtopic');
+    const courseId = params.get("course");
+    const topicId = params.get("topic");
+    const subtopicId = params.get("subtopic");
 
     if (courseId && Array.isArray(courses)) {
-      const course = courses.find(c => c.id === courseId);
+      const course = courses.find((c) => c.id === courseId);
       if (course) {
         setSelectedCourse(course);
-        
+
         if (topicId && Array.isArray(course.topics)) {
-          const topic = course.topics.find(t => t.id === topicId);
+          const topic = course.topics.find((t) => t.id === topicId);
           if (topic) {
             setSelectedTopic(topic);
-            
+
             if (subtopicId && Array.isArray(topic.subtopics)) {
-              const subtopic = topic.subtopics.find(s => s.id === subtopicId);
+              const subtopic = topic.subtopics.find((s) => s.id === subtopicId);
               if (subtopic) {
                 setSelectedSubtopic(subtopic);
               }
@@ -106,6 +109,7 @@ const normalizedDefaultCourses = normalizeCourses(
     setSelectedTopic(null);
     setSelectedSubtopic(null);
     navigate(`/?course=${course.id}`);
+    setIsSidebarOpen(false); 
   };
 
   const handleSelectTopic = (topic) => {
@@ -119,15 +123,18 @@ const normalizedDefaultCourses = normalizeCourses(
   const handleSelectSubtopic = (subtopic) => {
     setSelectedSubtopic(subtopic);
     if (selectedCourse && selectedTopic) {
-      navigate(`/?course=${selectedCourse.id}&topic=${selectedTopic.id}&subtopic=${subtopic.id}`);
+      navigate(
+        `/?course=${selectedCourse.id}&topic=${selectedTopic.id}&subtopic=${subtopic.id}`
+      );
     }
+    setIsSidebarOpen(false);
   };
 
   const toggleSubtopicCompletion = (courseId, topicId, subtopicId) => {
     const key = `${courseId}-${topicId}-${subtopicId}`;
-    setCompletedSubtopics(prev => ({
+    setCompletedSubtopics((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
@@ -140,17 +147,18 @@ const normalizedDefaultCourses = normalizeCourses(
     if (!topic || !Array.isArray(topic.subtopics)) {
       return { completed: 0, total: 0, percentage: 0 };
     }
-    
-    const completed = topic.subtopics.filter(sub => 
+
+    const completed = topic.subtopics.filter((sub) =>
       isSubtopicCompleted(courseId, topic.id, sub.id)
     ).length;
-    
+
     return {
       completed,
       total: topic.subtopics.length,
-      percentage: topic.subtopics.length > 0 
-        ? Math.round((completed / topic.subtopics.length) * 100) 
-        : 0
+      percentage:
+        topic.subtopics.length > 0
+          ? Math.round((completed / topic.subtopics.length) * 100)
+          : 0,
     };
   };
 
@@ -158,14 +166,14 @@ const normalizedDefaultCourses = normalizeCourses(
     if (!course || !Array.isArray(course.topics)) {
       return { completed: 0, total: 0, percentage: 0 };
     }
-    
+
     let totalSubtopics = 0;
     let completedSubtopicsCount = 0;
 
-    course.topics.forEach(topic => {
+    course.topics.forEach((topic) => {
       if (Array.isArray(topic.subtopics)) {
         totalSubtopics += topic.subtopics.length;
-        completedSubtopicsCount += topic.subtopics.filter(sub =>
+        completedSubtopicsCount += topic.subtopics.filter((sub) =>
           isSubtopicCompleted(course.id, topic.id, sub.id)
         ).length;
       }
@@ -174,56 +182,58 @@ const normalizedDefaultCourses = normalizeCourses(
     return {
       completed: completedSubtopicsCount,
       total: totalSubtopics,
-      percentage: totalSubtopics > 0 
-        ? Math.round((completedSubtopicsCount / totalSubtopics) * 100) 
-        : 0
+      percentage:
+        totalSubtopics > 0
+          ? Math.round((completedSubtopicsCount / totalSubtopics) * 100)
+          : 0,
     };
   };
 
   const addCourse = (newCourse) => {
-    setCourses(prev => {
+    setCourses((prev) => {
       const currentCourses = Array.isArray(prev) ? prev : [];
       return [...currentCourses, { ...newCourse, id: Date.now().toString() }];
     });
   };
 
   const deleteCourse = (courseId) => {
-    setCourses(prev => {
+    setCourses((prev) => {
       const currentCourses = Array.isArray(prev) ? prev : [];
-      return currentCourses.filter(c => c.id !== courseId);
+      return currentCourses.filter((c) => c.id !== courseId);
     });
-    
+
     if (selectedCourse?.id === courseId) {
       setSelectedCourse(null);
       setSelectedTopic(null);
       setSelectedSubtopic(null);
-      navigate('/');
+      navigate("/");
     }
   };
 
   const resetData = () => {
-  
     const originalData = CoursesJson.courses || CoursesJson || [];
     setCourses(originalData);
     setCompletedSubtopics({});
     setSelectedCourse(null);
     setSelectedTopic(null);
     setSelectedSubtopic(null);
-    localStorage.removeItem('courses');
-    localStorage.removeItem('completedSubtopics');
-    navigate('/');
+    localStorage.removeItem("courses");
+    localStorage.removeItem("completedSubtopics");
+    navigate("/");
   };
 
   const exportData = () => {
     const data = {
       courses,
-      completedSubtopics
+      completedSubtopics,
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'courses-export.json';
+    a.download = "courses-export.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -238,11 +248,14 @@ const normalizedDefaultCourses = normalizeCourses(
           if (data.courses && Array.isArray(data.courses)) {
             setCourses(data.courses);
           }
-          if (data.completedSubtopics && typeof data.completedSubtopics === 'object') {
+          if (
+            data.completedSubtopics &&
+            typeof data.completedSubtopics === "object"
+          ) {
             setCompletedSubtopics(data.completedSubtopics);
           }
         } catch (error) {
-          alert('Invalid JSON file');
+          alert("Invalid JSON file");
         }
       };
       reader.readAsText(file);
@@ -251,48 +264,62 @@ const normalizedDefaultCourses = normalizeCourses(
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <Header 
+      <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         exportData={exportData}
         importData={importData}
         resetData={resetData}
+        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        isSidebarOpen={isSidebarOpen}
       />
-      
-      <div className="flex flex-1 overflow-hidden">
+
+      <div className="flex flex-1 overflow-hidden relative">
         <Routes>
           <Route path="/admin" element={<AdminPanel users={users} />} />
-          <Route path="/" element={
-            <>
-           
-              <Sidebar
-  courses={normalizedCourses}
-  searchQuery={searchQuery}
-  selectedCourse={selectedCourse}
-  selectedTopic={selectedTopic}
-  selectedSubtopic={selectedSubtopic}
-  onSelectCourse={handleSelectCourse}
-  onSelectTopic={handleSelectTopic}
-  onSelectSubtopic={handleSelectSubtopic}
-  getCourseProgress={getCourseProgress}
-  getTopicProgress={getTopicProgress}
-  isSubtopicCompleted={isSubtopicCompleted}
-  addCourse={addCourse}
-  deleteCourse={deleteCourse}
-/>
+          <Route
+            path="/"
+            element={
+              <>
+                {/* Mobile overlay */}
+                {isSidebarOpen && (
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                  />
+                )}
 
-              <MainContent
-                selectedCourse={selectedCourse}
-                selectedTopic={selectedTopic}
-                selectedSubtopic={selectedSubtopic}
-                onSelectCourse={handleSelectCourse}
-                onSelectTopic={handleSelectTopic}
-                toggleSubtopicCompletion={toggleSubtopicCompletion}
-                isSubtopicCompleted={isSubtopicCompleted}
-                getTopicProgress={getTopicProgress}
-              />
-            </>
-          } />
+                <Sidebar
+                  courses={normalizedCourses}
+                  searchQuery={searchQuery}
+                  selectedCourse={selectedCourse}
+                  selectedTopic={selectedTopic}
+                  selectedSubtopic={selectedSubtopic}
+                  onSelectCourse={handleSelectCourse}
+                  onSelectTopic={handleSelectTopic}
+                  onSelectSubtopic={handleSelectSubtopic}
+                  getCourseProgress={getCourseProgress}
+                  getTopicProgress={getTopicProgress}
+                  isSubtopicCompleted={isSubtopicCompleted}
+                  addCourse={addCourse}
+                  deleteCourse={deleteCourse}
+                  isOpen={isSidebarOpen}
+                  onClose={() => setIsSidebarOpen(false)}
+                />
+
+                <MainContent
+                  selectedCourse={selectedCourse}
+                  selectedTopic={selectedTopic}
+                  selectedSubtopic={selectedSubtopic}
+                  onSelectCourse={handleSelectCourse}
+                  onSelectTopic={handleSelectTopic}
+                  toggleSubtopicCompletion={toggleSubtopicCompletion}
+                  isSubtopicCompleted={isSubtopicCompleted}
+                  getTopicProgress={getTopicProgress}
+                />
+              </>
+            }
+          />
         </Routes>
       </div>
     </div>

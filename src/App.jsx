@@ -6,7 +6,7 @@ import AdminPanel from './components/AdminPanel';
 import Header from './components/Header';
 import usersJson from './data/users.json';
 
-import Courses from './data/courses.json'
+import CoursesJson from './data/courses.json'
 
 
 
@@ -14,7 +14,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [initialCoursesData, setInitialCoursesData] = useState(Courses);
+  const [initialCoursesData, setInitialCoursesData] = useState(CoursesJson);
   const [initialUsersData, setInitialUsersData] = useState(usersJson.users);
 
   useEffect(() => {
